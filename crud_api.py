@@ -15,7 +15,7 @@ def consultar():
     connection = conecta()
     cursor = connection.cursor()
 
-    cmd_select = "SELECT id , nome, setor, gender, work_life_balance, marital_status, job_level, remote_work, attrition, created_at FROM cadastroFuncionarios;"
+    cmd_select = "SELECT id , nome, setor, gender, work_life_balance, marital_status, job_level, remote_work, prob_permanencia, attrition, created_at FROM cadastroFuncionarios;"
 
     try:
         cursor.execute(cmd_select)
@@ -33,8 +33,9 @@ def consultar():
                 'marital_status': dado[5],
                 'job_level': dado[6],
                 'remote_work': dado[7],
-                'attrition': dado[8],
-                'created_at': dado[9].isoformat() if dado[9] else None
+                'prob_permanencia': dado[8],
+                'attrition': dado[9],
+                'created_at': dado[10].isoformat() if dado[10] else None
             })
         return jsonify(resultado)
     except Exception as e:
@@ -55,13 +56,14 @@ def cadastrar():
     marital_status = data.get('marital_status')
     job_level = data.get('job_level')
     remote_work = data.get('remote_work')
+    prob_permanencia = data.get('prob_permanencia')
     attrition = data.get('attrition')
 
     connection = conecta()
     cursor = connection.cursor()
 
-    cmd_insert = "INSERT INTO cadastroFuncionarios (nome, setor, gender, work_life_balance, marital_status, job_level, remote_work, attrition) VALUES (%s,%s,%s,%s,%s,%s,%s,%s);"
-    values = (nome, setor, gender, work_life_balance, marital_status, job_level, remote_work, attrition)
+    cmd_insert = "INSERT INTO cadastroFuncionarios (nome, setor, gender, work_life_balance, marital_status, job_level, remote_work, prob_permanencia, attrition) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s);"
+    values = (nome, setor, gender, work_life_balance, marital_status, job_level, remote_work, prob_permanencia, attrition)
 
     try:
         cursor.execute(cmd_insert, values)
@@ -77,7 +79,7 @@ def cadastrar():
 @app.route('/cadastroFuncionarios/update/<int:id>', methods=['PUT'])
 def atualizar(id):
     data = request.get_json()
-    campos = ['nome', 'setor', 'gender', 'work_life_balance', 'marital_status', 'job_level', 'remote_work', 'attrition']
+    campos = ['nome', 'setor', 'gender', 'work_life_balance', 'marital_status', 'job_level', 'remote_work', 'prob_permanencia', 'attrition']
     
     campos_para_atualizar = {}
     for campo in campos:
@@ -170,7 +172,7 @@ def previsao(id):
             saida_formatada = f"{saida:.2f}%"  # Se quiser guardar como texto com % no banco, ou só o float, veja abaixo
 
             # Atualiza no banco - aqui considerando que Attrition é numérico (float) e guarda a probabilidade
-            sql_update = "UPDATE cadastroFuncionarios SET attrition = %s WHERE Id = %s"
+            sql_update = "UPDATE cadastroFuncionarios SET prob_permanencia = %s WHERE Id = %s"
             cursor.execute(sql_update, (saida, id))
             connection.commit()
 
@@ -180,7 +182,7 @@ def previsao(id):
             classe = int(predicao.argmax(axis=1)[0])
 
             # Se quiser atualizar o banco com a classe predita:
-            sql_update = "UPDATE cadastroFuncionarios SET attrition = %s WHERE Id = %s"
+            sql_update = "UPDATE cadastroFuncionarios SET prob_permanencia = %s WHERE Id = %s"
             cursor.execute(sql_update, (classe, id))
             connection.commit()
 
@@ -195,7 +197,7 @@ def calculaPermanenciaGeral():
         buscar_dados_reais("http://localhost:5000/cadastroFuncionarios/consulta", nome_arquivo="dados_reais.xlsx")
         df = pd.read_excel("dados_reais.xlsx")
 
-        permanencia_media = df["Attrition"].mean()
+        permanencia_media = df["Prob_Permanencia"].mean()
 
         return jsonify({"permanencia_geral": f"{permanencia_media:.2f}%"})
 
@@ -208,7 +210,7 @@ def generoComMaiorPemanencia():
         buscar_dados_reais("http://localhost:5000/cadastroFuncionarios/consulta", nome_arquivo="dados_reais.xlsx")
         df = pd.read_excel("dados_reais.xlsx")
 
-        media_prob = df.groupby('Gender')['Attrition'].mean()
+        media_prob = df.groupby('Gender')['Prob_Permanencia'].mean()
 
         gener_mais_permanente = media_prob.idxmax()
         probabilidade_genero = media_prob.max()
@@ -230,7 +232,7 @@ def setorComMaiorPermanencia():
         buscar_dados_reais("http://localhost:5000/cadastroFuncionarios/consulta", nome_arquivo="dados_reais.xlsx")
         df = pd.read_excel("dados_reais.xlsx")
 
-        media_setor = df.groupby('Setor')['Attrition'].mean()
+        media_setor = df.groupby('Setor')['Prob_Permanencia'].mean()
 
         setorMaisPermanente = media_setor.idxmax()
         probabilidadeSetor = media_setor.max()
@@ -247,7 +249,7 @@ def permanenciaSetores():
         buscar_dados_reais("http://localhost:5000/cadastroFuncionarios/consulta", nome_arquivo="dados_reais.xlsx")
         df = pd.read_excel("dados_reais.xlsx")
 
-        setores = df.groupby('Setor')['Attrition'].mean()
+        setores = df.groupby('Setor')['Prob_Permanencia'].mean()
         setores_formatado = setores.round(2).to_dict()
 
         return jsonify(setores_formatado)

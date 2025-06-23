@@ -26,7 +26,7 @@ def buscar_dados_reais(url_api, nome_arquivo="dados_reais.xlsx"):
         dados_json = resposta.json()
         df = pd.DataFrame(dados_json)
 
-        df.columns = ['Id', 'Nome', 'Setor', 'Gender', 'Work-Life Balance', 'Marital Status', 'Job Level', 'Remote Work', 'Attrition', 'Created at']
+        df.columns = ['Id', 'Nome', 'Setor', 'Gender', 'Work-Life Balance', 'Marital Status', 'Job Level', 'Remote Work', 'Prob_Permanencia', 'Attrition', 'Created at']
 
         if 'Gender' in df.columns:
             df['Gender'] = df['Gender'].astype(str).str.strip().str.lower().replace({'feminino': 0, 'masculino': 1}).infer_objects(copy=False)
